@@ -75,7 +75,15 @@ def podsumowanie_punkty_view(request):
 
         # Sortujemy lochy według pola sort z funkcji
         lochy_list = [nazwa for nazwa, _ in sorted(lochy_dict.items(), key=lambda x: x[1])]
-        wyniki = tabela.items()
+        #wyniki = tabela.items()
+        sortowanie = form.cleaned_data.get('sortowanie')
+
+        if sortowanie == 'punkty':
+            wyniki = sorted(tabela.items(), key=lambda x: x[1]['punkty'], reverse=True)
+        elif sortowanie == 'ilosc':
+            wyniki = sorted(tabela.items(), key=lambda x: x[1]['suma'], reverse=True)
+        else:  # domyślnie alfabetycznie po graczu
+            wyniki = sorted(tabela.items(), key=lambda x: x[0])
 
     return render(request, 'barbarella_site/podsumowanie_punkty.html', {
         'form': form,

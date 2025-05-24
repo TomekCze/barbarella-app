@@ -1,6 +1,11 @@
 from django import forms
 from django.db import connection
 
+SORTOWANIE_CHOICES = [
+    ('gracz', 'Alfabetycznie (gracz)'),
+    ('punkty', 'Punkty (malejąco)'),
+    ('ilosc', 'Ilość skrzyń (malejąco)'),
+]
 
 class DateRangeForm(forms.Form):
     data_od = forms.DateTimeField(
@@ -16,6 +21,7 @@ class DateRangeForm(forms.Form):
         label="Klan",
         required=False
     )
+    sortowanie = forms.ChoiceField(choices=SORTOWANIE_CHOICES, required=False, initial='gracz')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
