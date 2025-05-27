@@ -130,10 +130,31 @@ def weekly_norms_view(request):
             })
 
         # Wyciągamy zakresy tygodni dla graczy
-        for g in gracze:
+        """for g in gracze:
             if all("zakres" in t and t["zakres"] for t in g["tygodnie"]):
                 zakresy = [t["zakres"] for t in g["tygodnie"]]
-                break  # Zakresy są wspólne dla wszystkich graczy
+                break  # Zakresy są wspólne dla wszystkich graczy"""
+        # Pobieramy zakresy tygodni niezależnie
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    to_char(date_trunc('week', current_date - interval '0 days'), 'DD.MM.YYYY') || ' - ' ||
+                    to_char(date_trunc('week', current_date - interval '0 days') + interval '6 days', 'DD.MM.YYYY') AS zakres_0,
+                    to_char(date_trunc('week', current_date - interval '7 days'), 'DD.MM.YYYY') || ' - ' ||
+                    to_char(date_trunc('week', current_date) - interval '1 second', 'DD.MM.YYYY') AS zakres_1,
+                    to_char(date_trunc('week', current_date - interval '14 days'), 'DD.MM.YYYY') || ' - ' ||
+                    to_char(date_trunc('week', current_date - interval '7 days') - interval '1 second', 'DD.MM.YYYY') AS zakres_2,
+                    to_char(date_trunc('week', current_date - interval '21 days'), 'DD.MM.YYYY') || ' - ' ||
+                    to_char(date_trunc('week', current_date - interval '14 days') - interval '1 second', 'DD.MM.YYYY') AS zakres_3,
+                    to_char(date_trunc('week', current_date - interval '28 days'), 'DD.MM.YYYY') || ' - ' ||
+                    to_char(date_trunc('week', current_date - interval '21 days') - interval '1 second', 'DD.MM.YYYY') AS zakres_4,
+                    to_char(date_trunc('week', current_date - interval '35 days'), 'DD.MM.YYYY') || ' - ' ||
+                    to_char(date_trunc('week', current_date - interval '28 days') - interval '1 second', 'DD.MM.YYYY') AS zakres_5,
+                    to_char(date_trunc('week', current_date - interval '42 days'), 'DD.MM.YYYY') || ' - ' ||
+                    to_char(date_trunc('week', current_date - interval '35 days') - interval '1 second', 'DD.MM.YYYY') AS zakres_6
+            """)
+            zakresy_row = cursor.fetchone()
+            zakresy = list(zakresy_row)
 
     # Renderujemy stronę z danymi
     return render(request, "barbarella_site/weekly_norms.html", {
@@ -193,7 +214,7 @@ def tinman_view(request):
 
     # Pobierz listę klanów (zwracamy tylko skroty klanów)
     with connection.cursor() as cursor:
-        cursor.execute("SELECT nazwa_skrot FROM klany ORDER BY nazwa_skrot")
+        cursor.execute("SELECT nazwa_skrot FROM klany where czy_aktywne = 1 ORDER BY nazwa_skrot")
         klany = [row[0] for row in cursor.fetchall()]
 
     gracze = []
@@ -227,6 +248,9 @@ def tinman_view(request):
             if all("zakres" in t and t["zakres"] for t in g["tygodnie"]):
                 zakresy = [t["zakres"] for t in g["tygodnie"]]
                 break  # Zakresy są wspólne dla wszystkich graczy
+
+        if not zakresy and gracze:
+            zakresy = [t.get("zakres", "") for t in gracze[0]["tygodnie"]]
 
     # Renderujemy stronę z danymi
     return render(request, "barbarella_site/tinman.html", {

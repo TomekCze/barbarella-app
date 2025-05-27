@@ -37,18 +37,25 @@
           <thead style="position: sticky; top: 0; background-color: #222; color: #fff;">
             <tr>
               <th rowspan="2">Player</th>
-              {% with pierwszy_z_danymi=gracze|dictsort:"gracz"|first %}
+              <!--{% with pierwszy_z_danymi=gracze|dictsort:"gracz"|first %}
                 {% for tydzien in pierwszy_z_danymi.tygodnie %}
                   <th colspan="1">{{ tydzien.zakres }}</th>
                 {% endfor %}
-              {% endwith %}
+              {% endwith %}-->
+              {% for zakres in zakresy %}
+                <th colspan="1">{{ zakres }}</th>
+              {% endfor %}
             </tr>
             <tr>
-              {% with pierwszy_z_danymi=gracze|dictsort:"gracz"|first %}
+              <!--{% with pierwszy_z_danymi=gracze|dictsort:"gracz"|first %}
                 {% for tydzien in pierwszy_z_danymi.tygodnie %}
                   <th>Chests</th>
                 {% endfor %}
-              {% endwith %}
+              {% endwith %}-->
+
+              {% for zakres in zakresy %}
+                <th>Chests</th>
+              {% endfor %}
             </tr>
           </thead>
           <tbody>
