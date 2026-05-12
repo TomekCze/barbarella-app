@@ -59,10 +59,25 @@ def podsumowanie_punkty_view(request):
         data_do = form.cleaned_data['data_do']
         klan = form.cleaned_data.get('klan')  # Może być None
 
+        klan_id = None
+
+        if klan:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id
+                    FROM klany
+                    WHERE nazwa_skrot = %s
+                """, [klan])
+
+                row = cursor.fetchone()
+
+                if row:
+                    klan_id = row[0]
+
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT * FROM get_lochy_punkty_summary(%s::timestamp, %s::timestamp, %s::TEXT)
-            """, [data_od, data_do, klan])
+                SELECT * FROM get_lochy_punkty_summary(%s::timestamp, %s::timestamp, %s::TEXT, %s::INT)
+            """, [data_od, data_do, klan, klan_id])
             rows = cursor.fetchall()
 
         for gracz, nazwa_lochu, ilosc, punkty, sort in rows:
@@ -97,21 +112,44 @@ def weekly_norms_view(request):
     # Pobieranie wybranego klanu z zapytania GET
     selected_klan = request.GET.get("klan")
 
+    klany = []
+    limit = None
+
     # Pobierz listę klanów (zwracamy tylko skroty klanów)
     with connection.cursor() as cursor:
-        cursor.execute("SELECT nazwa_skrot FROM klany where czy_aktywne = 1 ORDER BY nazwa_skrot")
-        klany = [row[0] for row in cursor.fetchall()]
+        cursor.execute("SELECT limity, nazwa_skrot FROM klany where czy_aktywne = 1 ORDER BY nazwa_skrot")
+        klany = cursor.fetchall()
 
     gracze = []
     zakresy = []
 
     if selected_klan:
+
+        klan_id = None
+
+        if selected_klan:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id
+                    FROM klany
+                    WHERE nazwa_skrot = %s
+                """, [selected_klan])
+
+                row = cursor.fetchone()
+
+                if row:
+                    klan_id = row[0]
+
         # Używamy funkcji `get_weekly_summary_by_klan` zamiast bezpośredniego zapytania do widoku
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT * FROM get_weekly_summary_by_klan(%s)
-            """, [selected_klan])
+                SELECT * FROM get_weekly_summary_by_klan(%s, %s::INT)
+            """, [selected_klan, klan_id])
             rows = cursor.fetchall()
+
+        for l, n in klany:
+            if n == selected_klan:
+                limit = l
 
         # Przetwarzamy dane o graczach
         for row in rows:
@@ -161,7 +199,8 @@ def weekly_norms_view(request):
         "gracze": gracze,
         "zakresy": zakresy,
         "klany": klany,
-        "selected_klan": selected_klan
+        "selected_klan": selected_klan,
+        "limit": limit
     })
 """
 def weekly_norms_view(request):
@@ -203,8 +242,24 @@ def weekly_norms_view(request):
 
 #Początek scoring
 def scoring_view(request):
-    dane = Scoring.objects.all()
-    return render(request, 'barbarella_site/scoring.html', {'dane': dane})
+    # Pobieranie wybranego klanu z zapytania GET
+    selected_klan = request.GET.get("klan")
+
+    # Pobierz listę klanów (zwracamy tylko skroty klanów)
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT id, nazwa_skrot FROM klany where czy_aktywne = 1 ORDER BY nazwa_skrot")
+        klany = cursor.fetchall()
+
+    dane = Scoring.objects.none()
+
+    #jeśli wybrano klan
+    if selected_klan:
+        dane = Scoring.objects.filter(klan_id=selected_klan)
+
+    return render(request, 'barbarella_site/scoring.html', {
+        'dane': dane,
+        'klany': klany,
+        'selected_klan': selected_klan})
 #Koniec scoring
 
 #Poczatek tinman

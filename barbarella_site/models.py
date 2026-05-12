@@ -9,9 +9,11 @@ class PodsumowanieGraczy(models.Model):
         db_table = 'podsumowanie_graczy'
 
 class Scoring(models.Model):
-    chests = models.CharField(max_length=200, primary_key=True)
+    id = models.IntegerField(primary_key=True)
+    klan_id = models.IntegerField()
+    chests = models.CharField(max_length=200)
     points = models.IntegerField()
 
     class Meta:
-        managed = False  # Ważne! Bo to widok SQL, nie tabela.
+        managed = False
         db_table = 'scoring'
